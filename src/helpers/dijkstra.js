@@ -37,7 +37,7 @@ function dijkstra(grid, start, target) {
     // while queue is not empty
     while (queue.length > 0){
         // set current node to node with lowest priority
-        // currently pops the last item in the queue - or the highest priority
+        // currently pops the last item in the queue - or the highest priority - need to figure out this mechanic
         let current = queue.top();
 
         // if current node is target, return path
@@ -54,11 +54,13 @@ function dijkstra(grid, start, target) {
                 // calculate new distance
                 console.log("boop");
                 let newDistance = current.distance + 1;
-                if (newDistance < neighbor.distance){
-                    console.log(`new distance: ${newDistance}`);
-                    console.log(`neighbor distance: ${neighbor.distance}`)
-                    neighbor.distance = newDistance;
-                }
+                
+
+                // if (newDistance < neighbor.distance){
+                //     console.log(`new distance: ${newDistance}`);
+                //     console.log(`neighbor distance: ${neighbor.distance}`)
+                //     neighbor.distance = newDistance;
+                // }
                 // add neighbor to queue with priority new distance
                 //    queue.push(grid[current.y], newDistance);
                 // set neighbor's previous to current node
@@ -73,7 +75,7 @@ function dijkstra(grid, start, target) {
     return 0;
 }
 
-function checkPaths(cell) {
+function checkPaths(cell){
     let paths = [];
     // const options = ["top", "right", "bottom", "left"];
 
@@ -87,8 +89,15 @@ function checkPaths(cell) {
     // will return an array of available paths
 }
 
-function randomNum(size) {
+function randomNum(size){
     return Math.floor(Math.random() * size);
+}
+
+function getNeighborCoord(direction){
+    switch (direction) {
+        case "top":
+
+    }
 }
 
 // console.log(checkPaths({top: true, right: false, bottom: true, left: false}));
