@@ -17,12 +17,14 @@ type Grid struct {
 }
 
 var directions = [][]int{ {-2, 0}, {2, 0}, {0, -2}, {0, 2} }
+var neighbors = [][]int{ {-1, 0}, {1, 0}, {0, -1}, {0, 1} }
+var blocked string = "#"
+var passage string = " "
 
 func main() {
+    // 1. A Grid consists of a 2 dimensional array of cells.
     var height = 5 
     var width = 5
-    var blocked string = "#"
-    var passage string = " "
     var grid Grid
     var cells = make([][]Cell, width+1) 
 
@@ -30,53 +32,83 @@ func main() {
     grid.width = width
     grid.cells = cells
 
-    // 1. A Grid consists of a 2 dimensional array of cells.
     // 2. A Cell has 2 states: Blocked or Passage.
+    //      - made blocked/passage global variables so they can be accessed by helper functions
     // 3. Start with a Grid full of Cells in state Blocked.
     for i := 0; i <= grid.height; i++ {
         for j := 0; j <= grid.width; j++ {
             var new_cell = Cell{ coord: []int{i, j} , state: blocked }
-            //fmt.Println(new_cell)
             cells[i] = append(cells[i], new_cell)
         }
-        //fmt.Println(cells[i])
     }
 
-    // 4. Pick a random Cell, set it to state Passage and 
+    // 4. Pick a random Cell, set it to state Passage
     var rando_coord = []int{rand.Intn(height), rand.Intn(width)}
     var random_cell = grid.cells[rando_coord[0]][rando_coord[1]]
-    random_cell.state = passage
+    grid.cells[rando_coord[0]][rando_coord[1]].state = passage
    
-    // Compute its frontier cells. 
-    // A frontier cell of a Cell is a cell with distance 2 in state Blocked and within the grid.\
-    test_cell := grid.cells[3][3].coord
-    var move = []int{-2, 0}
-    var test_trans = translate_slice(test_cell, move)
-    fmt.Println(test_trans)
+    // 5. Compute its frontier cells. 
+    // A frontier cell of a Cell is a cell with distance 2 in state Blocked and within the grid.
+    frontier := [][]int{}
+    init_frontier := find_frontier(random_cell.coord, grid)
+    frontier = append_frontier(frontier, init_frontier) 
+    display_grid(grid)
+    fmt.Println(len(frontier))
 
-    //fmt.Println(find_frontier(test_cell))
-
-    // 3. While the list of frontier cells is not empty:
+    // 6. While the list of frontier cells is not empty:
+    for {
+        if len(frontier) < 1 {
+            break
+        }
+        rand_index := rand.Intn(len(frontier))
         //Pick a random frontier cell from the list of frontier cells.
         //Let neighbors(frontierCell) = All cells in distance 2 in state Passage. 
+        neighbors := find_neighbors(frontier[rand_index], grid)
         //Pick a random neighbor and connect the frontier cell with the neighbor by setting the cell in-between to state Passage. 
+        rand_neighbor := rand.Intn(len(neighbors))
+        fmt.Println(rand_neighbor)
         //Compute the frontier cells of the chosen frontier cell and add them to the frontier list. 
         //Remove the chosen frontier cell from the list of frontier cells.
+        frontier = rm_itm(frontier, rand_index)
+    }
+    fmt.Println("done")
 }
 
-func find_frontier(current []int) int {
-    var fcells = []int{}
-    
-    for _, value := range directions {
-        fmt.Println(value)
-    }
+func build_maze() {
 
-    fmt.Println(fcells)
-    return 0
-    // initial checks
-    // frontier cell is within grid
-   
-    // frontier cell state = blocked
+}
+
+func find_frontier(current []int, grid Grid) [][]int {
+    var fcells = [][]int{}
+    for _, qty := range directions {
+        var m = translate_slice(current, qty)
+        // frontier cell is within grid
+        if m[0] <= 0 || m[1] >= grid.width || m[0] >= grid.height || m[1] <= 0 {
+            continue
+        } 
+        // frontier cell state = blocked
+        if grid.cells[m[0]][m[1]].state == passage {
+            continue
+        } 
+        fcells = append(fcells, m)
+    }
+    return fcells
+}
+
+func find_neighbors(current []int, grid Grid) [][]int{
+    // all cells that are distance 2 away from current cell with state of passage
+    neighbors := [][]int{}
+    for _, qty := range directions {
+        var m = translate_slice(current, qty)
+        if m[0] <= 0 || m[1] >= grid.width || m[0] >= grid.height || m[1] <= 0 {
+            continue
+        }
+        if grid.cells[m[0]][m[1]].state == blocked {
+            continue
+        } 
+        neighbors = append(neighbors, m)
+    }
+    return neighbors
 }
 
 func translate_slice(input, qty []int) []int {
@@ -87,7 +119,54 @@ func translate_slice(input, qty []int) []int {
     return new_slice
 }
 
+func display_grid(grid Grid) {
+    for i:=0; i<grid.height; i++ {
+        fmt.Println(grid.cells[i])
+    }
+}
 
+func append_frontier(current, new [][]int) [][]int {
+    for _, value := range new {
+        current = append(current, value)
+    }
+    return current
+}
+
+func rm_itm(s [][]int, index int) [][]int {
+    s = append(s[:index], s[index+1:]...)
+    return s
+}
+
+func find_inbetween(current, neighbor [][]int) [][]int {
+    // subtract frontier from neighbor => difference 
+    // if current[0] % neighbor[0] == 0 {
+        // if current[0] - neighbor[0] > 0 {
+            // translate current [1, 0] & set cell state = passage 
+        //} else {
+            // translate current [-1, 0] & set cell state = passage
+        //}
+    //} else if current[1] % neighbor[1] == 0 {
+        // if current[1] - neighbor[1] > 0 {
+            // translate current [0, 1] & set cell state = passage 
+        //} else {
+            // translate current [0, -1] & set cell state = passage
+        //}
+    //}
+    if current[0] % neighbor[0] == 0 {
+        if current[0] - neighbor[0] > 0 {
+            // translate current [1, 0] & set cell state = passage 
+        } else {
+            // translate current [-1, 0] & set cell state = passage
+        }
+    } else if current[1] % neighbor[1] == 0 {
+        if current[1] - neighbor[1] > 0 {
+            // translate current [0, 1] & set cell state = passage 
+        } else {
+            // translate current [0, -1] & set cell state = passage
+        }
+    }
+    } 
+}
 
 
 
