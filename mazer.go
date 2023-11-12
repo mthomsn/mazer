@@ -20,13 +20,14 @@ var directions = [][]int{ {-2, 0}, {2, 0}, {0, -2}, {0, 2} }
 var neighbors = [][]int{ {-1, 0}, {1, 0}, {0, -1}, {0, 1} }
 var blocked string = "#"
 var passage string = " "
+var frontier string = "o"
 
 func main() {
     // 1. A Grid consists of a 2 dimensional array of cells.
-    var height = 5 
-    var width = 5
+    var height = 10 
+    var width = 10 
     var grid Grid
-    var cells = make([][]Cell, width+1) 
+    var cells = make([][]Cell, width+1, height+1) 
 
     grid.height = height
     grid.width = width
@@ -46,30 +47,50 @@ func main() {
     var rando_coord = []int{rand.Intn(height), rand.Intn(width)}
     var random_cell = grid.cells[rando_coord[0]][rando_coord[1]]
     grid.cells[rando_coord[0]][rando_coord[1]].state = passage
+    fmt.Println(grid.cells[rando_coord[0]][rando_coord[1]])
    
     // 5. Compute its frontier cells. 
     // A frontier cell of a Cell is a cell with distance 2 in state Blocked and within the grid.
     frontier := [][]int{}
     init_frontier := find_frontier(random_cell.coord, grid)
     frontier = append_frontier(frontier, init_frontier) 
-    display_grid(grid)
-    fmt.Println(len(frontier))
 
     // 6. While the list of frontier cells is not empty:
+    counter := 0
     for {
         if len(frontier) < 1 {
+            fmt.Printf("break from frontier%v \n", frontier)
             break
         }
+        fmt.Printf("counter: %v \n", counter)
         rand_index := rand.Intn(len(frontier))
+        random_frontier_cell := frontier[rand_index]
+
         //Pick a random frontier cell from the list of frontier cells.
         //Let neighbors(frontierCell) = All cells in distance 2 in state Passage. 
-        neighbors := find_neighbors(frontier[rand_index], grid)
+        neighbors := find_neighbors(random_frontier_cell, grid)
         //Pick a random neighbor and connect the frontier cell with the neighbor by setting the cell in-between to state Passage. 
+        if len(neighbors) == 0 {
+            fmt.Printf("break from neighbors %v \n", neighbors)
+            break 
+        } 
+        fmt.Printf("random frontier cell: %v \n", frontier[rand_index])
+        fmt.Printf("neighbors of rand frontier: %v \n", neighbors)
         rand_neighbor := rand.Intn(len(neighbors))
-        fmt.Println(rand_neighbor)
-        //Compute the frontier cells of the chosen frontier cell and add them to the frontier list. 
+        inbetween := find_inbetween(frontier[rand_index], neighbors[rand_neighbor])
+        grid.cells[inbetween[0]][inbetween[1]].state = passage
+        grid.cells[random_frontier_cell[0]][random_frontier_cell[1]].state = passage
+        neighbors = nil
+        //Compute the frontier cells of the chosen frontier cell and add them to the frontier list.
+        add_cells := find_frontier(frontier[rand_index], grid)
+        //fmt.Printf("cells to add: %v \n", add_cells)
+        frontier = append_frontier(frontier, add_cells)
         //Remove the chosen frontier cell from the list of frontier cells.
         frontier = rm_itm(frontier, rand_index)
+        //fmt.Printf("frontier @ end of loop %v \n", frontier)
+        fmt.Println(frontier)
+        display_grid(grid)
+        counter++
     }
     fmt.Println("done")
 }
@@ -89,9 +110,14 @@ func find_frontier(current []int, grid Grid) [][]int {
         // frontier cell state = blocked
         if grid.cells[m[0]][m[1]].state == passage {
             continue
-        } 
+        }
+        if grid.cells[m[0]][m[1]].state == frontier {
+            continue
+        }
+        grid.cells[m[0]][m[1]].state = frontier 
         fcells = append(fcells, m)
     }
+    fmt.Printf("cells to add to frontier: %v \n", fcells)
     return fcells
 }
 
@@ -104,6 +130,9 @@ func find_neighbors(current []int, grid Grid) [][]int{
             continue
         }
         if grid.cells[m[0]][m[1]].state == blocked {
+            continue
+        } 
+        if grid.cells[m[0]][m[1]].state == frontier {
             continue
         } 
         neighbors = append(neighbors, m)
@@ -120,8 +149,17 @@ func translate_slice(input, qty []int) []int {
 }
 
 func display_grid(grid Grid) {
-    for i:=0; i<grid.height; i++ {
-        fmt.Println(grid.cells[i])
+    var display = [][]string{}
+    var row = []string{}
+    for i:=0; i<=grid.height; i++ {
+        for j:=0; j<=grid.width; j++ {
+            row = append(row, grid.cells[i][j].state)
+        }
+        display = append(display, row)
+        row = nil
+    }
+    for i:=0; i<=grid.height; i++ {
+        fmt.Println(display[i])
     }
 }
 
@@ -137,35 +175,38 @@ func rm_itm(s [][]int, index int) [][]int {
     return s
 }
 
-func find_inbetween(current, neighbor [][]int) [][]int {
-    // subtract frontier from neighbor => difference 
-    // if current[0] % neighbor[0] == 0 {
-        // if current[0] - neighbor[0] > 0 {
-            // translate current [1, 0] & set cell state = passage 
-        //} else {
-            // translate current [-1, 0] & set cell state = passage
-        //}
-    //} else if current[1] % neighbor[1] == 0 {
-        // if current[1] - neighbor[1] > 0 {
-            // translate current [0, 1] & set cell state = passage 
-        //} else {
-            // translate current [0, -1] & set cell state = passage
-        //}
-    //}
-    if current[0] % neighbor[0] == 0 {
-        if current[0] - neighbor[0] > 0 {
-            // translate current [1, 0] & set cell state = passage 
-        } else {
-            // translate current [-1, 0] & set cell state = passage
-        }
-    } else if current[1] % neighbor[1] == 0 {
+func find_inbetween(current, neighbor []int) []int {
+    //fmt.Printf("current: %v \n", current)
+    //fmt.Printf("neighbor: %v \n", neighbor)
+
+    type Directions struct {
+        right []int
+        left []int
+        up []int
+        down []int
+    }
+    dir := Directions{
+        right: []int{0, 1},
+        left: []int{0, -1},
+        up: []int{-1, 0},
+        down: []int{1, 0},
+    }
+    var target = []int{}
+
+    if current[0] - neighbor[0] == 0 {
         if current[1] - neighbor[1] > 0 {
-            // translate current [0, 1] & set cell state = passage 
+            target = translate_slice(current, dir.left)
         } else {
-            // translate current [0, -1] & set cell state = passage
+            target = translate_slice(current, dir.right)
+        }
+    } else if current[1] - neighbor[1] == 0 {
+        if current[0] - neighbor[0] > 0 {
+            target = translate_slice(current, dir.up)
+        } else {
+            target = translate_slice(current, dir.down)
         }
     }
-    } 
+    return target     
 }
 
 
