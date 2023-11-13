@@ -2,6 +2,7 @@ package main
 import (
     "fmt"
     "math/rand"
+    "time"
 )
 
 type Cell struct {
@@ -28,6 +29,7 @@ func main() {
     var width = 10 
     var grid Grid
     var cells = make([][]Cell, width+1, height+1) 
+    rand.Seed(time.Now().UnixNano())
 
     grid.height = height
     grid.width = width
@@ -44,10 +46,11 @@ func main() {
     }
 
     // 4. Pick a random Cell, set it to state Passage
-    var rando_coord = []int{rand.Intn(height), rand.Intn(width)}
+    // need to add verification that random cell is within grid
+    var rando_coord = rand_coord(grid)
+    fmt.Printf("random start coord: %v \n", rando_coord)
     var random_cell = grid.cells[rando_coord[0]][rando_coord[1]]
     grid.cells[rando_coord[0]][rando_coord[1]].state = passage
-    fmt.Println(grid.cells[rando_coord[0]][rando_coord[1]])
    
     // 5. Compute its frontier cells. 
     // A frontier cell of a Cell is a cell with distance 2 in state Blocked and within the grid.
@@ -59,10 +62,8 @@ func main() {
     counter := 0
     for {
         if len(frontier) < 1 {
-            fmt.Printf("break from frontier%v \n", frontier)
             break
         }
-        fmt.Printf("counter: %v \n", counter)
         rand_index := rand.Intn(len(frontier))
         random_frontier_cell := frontier[rand_index]
 
@@ -71,11 +72,8 @@ func main() {
         neighbors := find_neighbors(random_frontier_cell, grid)
         //Pick a random neighbor and connect the frontier cell with the neighbor by setting the cell in-between to state Passage. 
         if len(neighbors) == 0 {
-            fmt.Printf("break from neighbors %v \n", neighbors)
             break 
         } 
-        fmt.Printf("random frontier cell: %v \n", frontier[rand_index])
-        fmt.Printf("neighbors of rand frontier: %v \n", neighbors)
         rand_neighbor := rand.Intn(len(neighbors))
         inbetween := find_inbetween(frontier[rand_index], neighbors[rand_neighbor])
         grid.cells[inbetween[0]][inbetween[1]].state = passage
@@ -88,15 +86,12 @@ func main() {
         //Remove the chosen frontier cell from the list of frontier cells.
         frontier = rm_itm(frontier, rand_index)
         //fmt.Printf("frontier @ end of loop %v \n", frontier)
-        fmt.Println(frontier)
-        display_grid(grid)
         counter++
     }
-    fmt.Println("done")
-}
-
-func build_maze() {
-
+    fmt.Printf("counter: %v \n", counter)
+    display_grid(grid)
+    start := generate_start(grid)
+    fmt.Println(start)
 }
 
 func find_frontier(current []int, grid Grid) [][]int {
@@ -117,7 +112,6 @@ func find_frontier(current []int, grid Grid) [][]int {
         grid.cells[m[0]][m[1]].state = frontier 
         fcells = append(fcells, m)
     }
-    fmt.Printf("cells to add to frontier: %v \n", fcells)
     return fcells
 }
 
@@ -209,9 +203,56 @@ func find_inbetween(current, neighbor []int) []int {
     return target     
 }
 
+func generate_start(grid Grid) []int{
+    // choose random start point along edge of grid
+    // either top, bottom, left, or right side of maze
+    // random num to deciede row
+    //      if random num is 0 or max height
+    //          another random num from 1 => max width -1
+    //      else
+    //          another random num => either 0 or max width
+    // check to make sure cell is connected to passage
+    rand_row := rand.Intn(grid.height)
+    fmt.Println(rand_row)
+    var rand_col int
+    if rand_row == 0 || rand_row == grid.height {
+        rand_col = rand.Intn(grid.width)
+        if rand_col == 0 {
+            rand_col++
+        } else if rand_col == grid.width {
+            rand_col--
+        }
+    } else {
+        options := []int{0, grid.width}
+        rand_col = options[rand.Intn(len(options))]
+    }
+    fmt.Println(rand_col)
+    start := []int{rand_row, rand_col}
+    return start
+}
 
+//func generate_end(grid Grid, start []int) []int{}
 
+func rand_coord(grid Grid) []int {
+    var random_coord = []int{}
+    var row, col int
 
+    for {
+        random_coord = nil
+        row = rand.Intn(grid.height)
+        if row == 0 || row % 2 == 0 || row == grid.height {
+            continue
+        }
+        random_coord = append(random_coord, row)
+        col = rand.Intn(grid.width)
+        if col == 0 || col % 2 == 0 || col == grid.width {
+            continue
+        }
+        random_coord = append(random_coord, col)
+        break
+    } 
+    return random_coord
+}
 
 
 
