@@ -22,14 +22,15 @@ var neighbors = [][]int{ {-1, 0}, {1, 0}, {0, -1}, {0, 1} }
 var blocked string = "#"
 var passage string = " "
 var frontier string = "o"
+var maze_start string = "s"
+var maze_finish string = "f"
 
 func main() {
     // 1. A Grid consists of a 2 dimensional array of cells.
-    var height = 10 
-    var width = 10 
+    var height = 20 
+    var width = 20 
     var grid Grid
     var cells = make([][]Cell, width+1, height+1) 
-    rand.Seed(time.Now().UnixNano())
 
     grid.height = height
     grid.width = width
@@ -48,7 +49,6 @@ func main() {
     // 4. Pick a random Cell, set it to state Passage
     // need to add verification that random cell is within grid
     var rando_coord = rand_coord(grid)
-    fmt.Printf("random start coord: %v \n", rando_coord)
     var random_cell = grid.cells[rando_coord[0]][rando_coord[1]]
     grid.cells[rando_coord[0]][rando_coord[1]].state = passage
    
@@ -88,10 +88,13 @@ func main() {
         //fmt.Printf("frontier @ end of loop %v \n", frontier)
         counter++
     }
-    fmt.Printf("counter: %v \n", counter)
-    display_grid(grid)
+    //fmt.Printf("counter: %v \n", counter)
     start := generate_start(grid)
-    fmt.Println(start)
+    rand.Seed(time.Now().UnixNano())
+    finish := generate_finish(grid, start)
+    grid.cells[start[0]][start[1]].state = maze_start
+    grid.cells[finish[0]][finish[1]].state = maze_finish 
+    display_grid(grid)
 }
 
 func find_frontier(current []int, grid Grid) [][]int {
@@ -136,7 +139,7 @@ func find_neighbors(current []int, grid Grid) [][]int{
 
 func translate_slice(input, qty []int) []int {
     var new_slice = []int{}
-    for i, _ := range qty  {
+    for i := range qty  {
         new_slice = append(new_slice, input[i]+qty[i])
     }
     return new_slice
@@ -204,16 +207,8 @@ func find_inbetween(current, neighbor []int) []int {
 }
 
 func generate_start(grid Grid) []int{
-    // choose random start point along edge of grid
-    // either top, bottom, left, or right side of maze
-    // random num to deciede row
-    //      if random num is 0 or max height
-    //          another random num from 1 => max width -1
-    //      else
-    //          another random num => either 0 or max width
-    // check to make sure cell is connected to passage
-    rand_row := rand.Intn(grid.height)
-    fmt.Println(rand_row)
+    var rand_row int
+    rand_row = rand.Intn(grid.height)
     var rand_col int
     if rand_row == 0 || rand_row == grid.height {
         rand_col = rand.Intn(grid.width)
@@ -226,12 +221,35 @@ func generate_start(grid Grid) []int{
         options := []int{0, grid.width}
         rand_col = options[rand.Intn(len(options))]
     }
-    fmt.Println(rand_col)
     start := []int{rand_row, rand_col}
     return start
 }
 
-//func generate_end(grid Grid, start []int) []int{}
+func generate_finish(grid Grid, start []int) []int{
+    var x, y int
+    var finish = []int{}
+
+    if start[0] <= grid.height / 2 {
+        x = randInt((grid.height - (grid.height / 2)), grid.height)
+    } else {
+        x = randInt(0, (grid.height / 2))
+    }
+    finish = append(finish, x)
+
+    if x == 0 || x == grid.height {
+        y = randInt(0, grid.width)
+    } else if start[1] < grid.width {
+        y = grid.width 
+    } else {
+        y = 0 
+    }
+    finish = append(finish, y)
+    return finish
+}
+
+func randInt(min, max int) int {
+    return min + rand.Intn(max - min)
+}
 
 func rand_coord(grid Grid) []int {
     var random_coord = []int{}
@@ -254,8 +272,9 @@ func rand_coord(grid Grid) []int {
     return random_coord
 }
 
-
-
+func init() {
+    rand.Seed(time.Now().UnixNano())
+}
 
 
 
