@@ -1,4 +1,5 @@
 package main 
+
 import (
     "fmt"
     "math/rand"
@@ -95,6 +96,8 @@ func main() {
     grid.cells[start[0]][start[1]].state = maze_start
     grid.cells[finish[0]][finish[1]].state = maze_finish 
     display_grid(grid)
+    solve := Solve();
+    fmt.Println(solve)
 }
 
 func find_frontier(current []int, grid Grid) [][]int {
@@ -275,8 +278,6 @@ func rand_coord(grid Grid) []int {
 func init() {
     rand.Seed(time.Now().UnixNano())
 }
-
-
 
 
 
